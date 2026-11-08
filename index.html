@@ -253,22 +253,6 @@ hr.div{border:none;border-top:1px solid var(--bord)}
   .ptab{min-width:80px;font-size:.7rem;padding:7px 6px}
 }
 
-/* ================================================================ EXPLANATION */
-#expSec{padding-top:60px}
-.exp-card{
-  max-width:900px;margin:0 auto;background:linear-gradient(180deg, rgba(12,22,38,.9), rgba(9,16,29,.96));
-  border:1px solid rgba(148,163,184,.16);border-radius:20px;padding:44px;box-shadow:var(--shadow-card);
-}
-@media(max-width:600px){.exp-card{padding:24px}}
-.exp-card h2{font-family:var(--FD);font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:20px}
-.exp-card h3{font-family:var(--FD);font-size:1rem;font-weight:700;color:var(--pri);margin:28px 0 10px}
-.exp-card p{color:var(--tx2);line-height:1.85;margin-bottom:14px}
-.exp-card strong{color:var(--tx)}
-.fml{background:var(--surf);border-left:3px solid var(--pri);border-radius:0 8px 8px 0;padding:14px 20px;font-family:var(--FM);font-size:.88rem;color:var(--tx);margin:16px 0;overflow-x:auto;line-height:1.9}
-.fml .cm{color:var(--mu);font-size:.78rem}
-.hl{background:rgba(0,200,255,.05);border:1px solid rgba(0,200,255,.18);border-radius:10px;padding:18px 22px;margin:18px 0}
-.hl p{margin:0;color:var(--tx)}
-
 footer{text-align:center;padding:36px 24px;border-top:1px solid var(--bord);color:var(--mu);font-size:.8rem}
 footer span{color:var(--pri)}
 </style>
@@ -284,7 +268,6 @@ footer span{color:var(--pri)}
     <p class="hero-sub">Licht, Wellen und Interferenz – ein Experiment aus dem Jahr 1801, das unsere Vorstellung der Natur für immer veränderte. Erlebe die Quantenwelt interaktiv.</p>
     <div class="hero-btns">
       <a href="#simSec" class="btn btn-pri">⚗️ Simulation starten</a>
-      <a href="#expSec" class="btn btn-ghost">📖 Physik erkunden</a>
     </div>
   </div>
   <div class="hero-scroll">
@@ -521,27 +504,6 @@ footer span{color:var(--pri)}
         <button class="btn btn-ghost btn-sm" id="btnFS2">⛶ Vollbild</button>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ════ ERKLÄRUNG ════ -->
-<section id="expSec">
-  <div class="sec-head">
-    <div class="sec-lbl">📚 Physikalische Erklärung</div>
-    <h2 class="sec-title">Das Experiment verstehen</h2>
-  </div>
-  <div class="exp-card">
-    <h2>Thomas Youngs Doppelspaltexperiment (1801/02)</h2>
-    <p>Im Jahr 1801 führte der britische Universalgelehrte <strong>Thomas Young</strong> ein Experiment durch, das die Physik revolutionieren sollte: Er ließ Licht durch zwei schmale Spalte fallen und beobachtete auf einem dahinter aufgestellten Schirm ein Muster aus hellen und dunklen Streifen. Dieses Ergebnis widersprach Newtons Teilchentheorie des Lichts fundamental – und bewies dessen <strong>Wellennatur</strong>.</p>
-    <div class="hl"><p>🌊 <strong>Analogie:</strong> Stell dir einen ruhigen Teich vor. Wirfst du zwei Steine gleichzeitig hinein, entstehen kreisförmige Wellen. Wo Wellenberge beider Quellen aufeinandertreffen, entsteht ein größerer Wellenberg (<em>konstruktive Interferenz</em>). Wo ein Wellenberg auf ein Wellental trifft, löschen sie sich aus (<em>destruktive Interferenz</em>). Genau dasselbe geschieht mit Lichtwellen am Doppelspalt.</p></div>
-    <h3>Das Prinzip der Interferenz</h3>
-    <p>Trifft Licht auf den Doppelspalt, wirkt jeder Spalt nach dem <strong>Huygens'schen Prinzip</strong> als eigenständige Kugelwellenquelle. Die zwei Wellen überlagern sich und erzeugen je nach Gangunterschied konstruktive oder destruktive Interferenz.</p>
-    <div class="fml">d · sin(θ) = m · λ &nbsp;&nbsp;&nbsp; (m = 0, ±1, ±2, ...) → helle Streifen<br>d · sin(θ) = (m + ½) · λ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; → dunkle Streifen<br><span class="cm">// d = Spaltabstand, θ = Winkel, λ = Wellenlänge, m = Ordnung</span></div>
-    <h3>Der Streifenabstand</h3>
-    <div class="fml">Δy ≈ λ · L / d<br><span class="cm">// Probiere die Regler – größeres λ oder L → breitere Streifen, größeres d → engere Streifen</span></div>
-    <h3>Die Hüllkurve – Einfluss der Spaltbreite</h3>
-    <div class="fml">I(y) = I₀ · sinc²(π·a·y / λL) · cos²(π·d·y / λL)<br><span class="cm">// sinc²-Term: Einzelspalt-Hüllkurve &nbsp;|&nbsp; cos²-Term: Doppelspalt-Interferenz</span></div>
-    <div class="hl"><p>⚛️ <strong>Photonenmodus:</strong> Einzelne Photonen treffen scheinbar zufällig auf den Schirm. Nach und nach baut sich das Interferenzmuster auf – als würden die Photonen „wissen", wo die hellen Streifen sein werden, ohne je gleichzeitig an beiden Spalten zu sein.</p></div>
   </div>
 </section>
 
