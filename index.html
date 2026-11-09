@@ -213,12 +213,6 @@ hr.div{border:none;border-top:1px solid var(--bord)}
 .derived-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--FM);font-size:.72rem;color:var(--mu);background:var(--surf);border:1px solid var(--bord);border-radius:6px;padding:6px 10px}
 .derived-row b{color:var(--tx2);font-weight:600}
 
-/* ---- Panel toggle buttons row (Lernmodus / Messung / Auswertung) ---- */
-.panel-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--bord)}
-.ptab{flex:1;min-width:110px;padding:8px 10px;border-radius:7px;border:1px solid var(--bord);background:var(--surf);color:var(--tx2);font-family:var(--FB);font-size:.76rem;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
-.ptab:hover{border-color:var(--bord2);color:var(--tx)}
-.ptab.on{background:rgba(0,200,255,.1);border-color:var(--pri);color:var(--pri)}
-
 /* ---- Lernmodus panel ---- */
 .aux-panel{display:none;padding:16px;border-top:1px solid var(--bord);background:var(--bg2)}
 .aux-panel.on{display:block}
@@ -250,7 +244,6 @@ hr.div{border:none;border-top:1px solid var(--bord)}
 
 @media(max-width:640px){
   .aux-grid{grid-template-columns:repeat(2,1fr)}
-  .ptab{min-width:80px;font-size:.7rem;padding:7px 6px}
 }
 
 footer{text-align:center;padding:36px 24px;border-top:1px solid var(--bord);color:var(--mu);font-size:.8rem}
@@ -329,14 +322,6 @@ footer span{color:var(--pri)}
           <span><kbd class="kbd">←→</kbd> λ ±5nm</span>
           <span><kbd class="kbd">↑↓</kbd> d ±5μm</span>
           <span><kbd class="kbd">1</kbd><kbd class="kbd">2</kbd><kbd class="kbd">5</kbd> Spalte</span>
-          <span><kbd class="kbd">L</kbd> Lernmodus</span>
-        </div>
-
-        <!-- Auxiliary panels: Lernmodus / Messung / Auswertung -->
-        <div class="panel-tabs">
-          <button class="ptab" id="tabLearn">📘 Lernmodus</button>
-          <button class="ptab" id="tabMeas">🎯 Messpunkte</button>
-          <button class="ptab" id="tabEval">📊 Auswertung</button>
         </div>
 
         <div class="aux-panel" id="panelLearn">
@@ -385,7 +370,6 @@ footer span{color:var(--pri)}
 
       <div class="info-grid">
         <div class="info-chip"><div class="chip-lbl">Wellenlänge λ</div><div class="chip-val" id="iv-lam">550<span class="chip-u">nm</span></div></div>
-        <div class="info-chip"><div class="chip-lbl">Frequenz f</div><div class="chip-val" id="iv-f">–<span class="chip-u">THz</span></div></div>
         <div class="info-chip"><div class="chip-lbl">Spaltabstand d</div><div class="chip-val" id="iv-d">150<span class="chip-u">μm</span></div></div>
         <div class="info-chip"><div class="chip-lbl">Schirmabstand L</div><div class="chip-val" id="iv-L">1000<span class="chip-u">mm</span></div></div>
         <div class="info-chip"><div class="chip-lbl">Streifenabstand Δy</div><div class="chip-val" id="iv-dy">–<span class="chip-u">mm</span></div></div>
@@ -406,8 +390,6 @@ footer span{color:var(--pri)}
           <div class="wl-wrap"><div class="wl-bar"></div><div class="wl-thumb" id="wlThumb"></div></div>
           <input type="range" id="sl-lam" min="380" max="750" value="550" step="1">
         </div>
-
-        <div class="derived-row"><span>Frequenz f = c / λ</span><b id="sv-f">–</b></div>
 
         <div class="sl-grp">
           <div class="sl-hdr"><span class="sl-nm">Amplitude E₀</span><span class="sl-vl" id="sv-amp">1.00</span></div>
@@ -542,6 +524,9 @@ const ST = {
   t:           0,
   lastTs:      0,
   animId:      null,
+  lowPower:    false,
+  renderProfile: null,
+  frameCounter: 0,
   // Photon accumulation
   accumCanvas: null,
   accumCtx:    null,
@@ -568,6 +553,24 @@ const ST = {
   audioOsc:  null,
   audioGain: null,
 };
+
+function detectRenderProfile() {
+  const cores = navigator.hardwareConcurrency || 4;
+  const memory = navigator.deviceMemory || 4;
+  const mobile = /Mobi|Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '');
+  const lowPower = mobile ? cores <= 4 : cores <= 4 || memory <= 4;
+  return {
+    lowPower,
+    fieldStep: lowPower ? 4 : 3,
+    wavefrontRings: lowPower ? 10 : 18,
+    graphStep: lowPower ? 2 : 1,
+    frameSkip: lowPower ? 2 : 1,
+    glowSamples: lowPower ? 3 : 6,
+  };
+}
+
+ST.renderProfile = detectRenderProfile();
+ST.lowPower = ST.renderProfile.lowPower;
 
 /* ══════════════════════════════════════════════════════════════════
    § 2  PHYSIK-HILFSFUNKTIONEN
@@ -875,7 +878,7 @@ function drawAnimatedField(t) {
   const isIntensityView = ST.fieldMode==='intensity';
   const ampScale = Math.min(1.8, P.amp);
 
-  const STEP = 3;
+  const STEP = ST.renderProfile?.fieldStep || 3;
   const img  = ctx.createImageData(fw, fh);
 
   for(let py=0; py<fh; py+=STEP) {
@@ -968,7 +971,7 @@ function drawAnimatedField(t) {
 /* 4.4b Lightweight wavefront rings (used in wave+field modes on top of field) */
 function drawWavefronts(t) {
   if(!ST.showWF||ST.mode==='field') return;
-  const slits=slitPos(), LAM_PX=32+(P.lambda-550)/200*10, SPEED=52, NUM_R=18;
+  const slits=slitPos(), LAM_PX=32+(P.lambda-550)/200*10, SPEED=52, NUM_R=ST.renderProfile?.wavefrontRings || 18;
   const col=wlToRGB(P.lambda);
   ctx.save();
   ctx.beginPath(); ctx.rect(LO.barX+6,0,LO.scX-LO.barX-6,H()); ctx.clip();
@@ -1455,6 +1458,16 @@ function drawLabels() {
    ══════════════════════════════════════════════════════════════════ */
 
 function renderFrame(ts) {
+  const skipEvery = ST.renderProfile?.frameSkip || 1;
+  if (skipEvery > 1 && !ST.paused && !ST.stepFrame) {
+    ST.frameCounter = (ST.frameCounter + 1) % skipEvery;
+    if (ST.frameCounter !== 0) {
+      ST.lastTs = ts;
+      ST.animId = requestAnimationFrame(renderFrame);
+      return;
+    }
+  }
+
   if(!ST.paused || ST.stepFrame) {
     const dt=ST.lastTs>0 ? Math.min(50,ts-ST.lastTs)/1000 : 1/60;
     ST.t+=ST.stepFrame ? (1/24) : dt;
@@ -1507,19 +1520,20 @@ function drawGraph() {
   const lam_m=P.lambda*1e-9, d_m=P.d*1e-6, a_m=P.a*1e-6, Lm=P.L*1e-3;
   const col=wlToRGB(P.lambda);
   const RANGE=0.030;
+  const xStep = Math.max(1, ST.renderProfile?.graphStep || 1);
 
   // Main curve
   const pts=[];
-  for(let px=0;px<=gw;px++){
+  for(let px=0;px<=gw;px+=xStep){
     const y_m=((px/gw)-0.5)*RANGE*2;
     const I=screenI_eff(y_m,lam_m,d_m,a_m,Lm,P.N)*P.bright;
     const yp=gh-Math.min(1,Math.sqrt(I))*(gh-18)-5;
-    pts.push(yp);
+    pts.push({x:px,y:yp});
   }
 
   // Fill
   gx.beginPath(); gx.moveTo(0,gh);
-  pts.forEach((y,x)=>gx.lineTo(x,y));
+  pts.forEach((p,i)=>{ if(i===0) gx.lineTo(p.x,p.y); else gx.lineTo(p.x,p.y); });
   gx.lineTo(gw,gh); gx.closePath();
   const grad=gx.createLinearGradient(0,0,0,gh);
   grad.addColorStop(0,`rgba(${col.r},${col.g},${col.b},0.38)`);
@@ -1528,19 +1542,19 @@ function drawGraph() {
 
   // Line
   gx.beginPath();
-  pts.forEach((y,x)=>(x===0?gx.moveTo(x,y):gx.lineTo(x,y)));
+  pts.forEach((p,i)=>(i===0?gx.moveTo(p.x,p.y):gx.lineTo(p.x,p.y)));
   gx.strokeStyle=`rgba(${col.r},${col.g},${col.b},0.92)`;
   gx.lineWidth=1.8; gx.stroke();
 
   // Envelope
   if(ST.showEnv&&P.N>1&&!ST.welcherWeg){
     gx.beginPath();
-    for(let px=0;px<=gw;px++){
+    for(let px=0;px<=gw;px+=xStep){
       const y_m=((px/gw)-0.5)*RANGE*2;
       const sinT=y_m/Math.hypot(y_m,Lm);
       const env=sinc(a_m*sinT/lam_m)**2*P.bright;
       const yp=gh-Math.min(1,Math.sqrt(env))*(gh-18)-5;
-      px===0?gx.moveTo(px,yp):gx.lineTo(px,yp);
+      if(px===0) gx.moveTo(px,yp); else gx.lineTo(px,yp);
     }
     gx.strokeStyle='rgba(255,185,50,0.5)'; gx.lineWidth=1.2;
     gx.setLineDash([4,5]); gx.stroke(); gx.setLineDash([]);
@@ -1615,16 +1629,13 @@ function updateWlThumb() {
 
 function updateInfo() {
   const dy=fringeSpacing();
-  const f_THz=(C_LIGHT/(P.lambda*1e-9))/1e12;
   document.getElementById('iv-lam').innerHTML=`${P.lambda}<span class="chip-u">nm</span>`;
-  document.getElementById('iv-f').innerHTML=`${f_THz.toFixed(1)}<span class="chip-u">THz</span>`;
   document.getElementById('iv-d').innerHTML=`${P.d}<span class="chip-u">μm</span>`;
   document.getElementById('iv-L').innerHTML=`${P.L}<span class="chip-u">mm</span>`;
   document.getElementById('iv-a').innerHTML=`${P.a}<span class="chip-u">μm</span>`;
   document.getElementById('iv-dy').innerHTML=isNaN(dy)?`–`:`${dy.toFixed(2)}<span class="chip-u">mm</span>`;
   document.getElementById('iv-mx').textContent=visMaxima();
   document.getElementById('fringeInfo').textContent=isNaN(dy)?'':`Δy ≈ ${dy.toFixed(2)} mm`;
-  document.getElementById('sv-f').textContent=`${f_THz.toFixed(2)} THz`;
 }
 
 function syncUI() {
@@ -1878,23 +1889,6 @@ document.querySelectorAll('#fieldSeg .seg-btn').forEach(btn=>{
   });
 });
 
-// ── Auxiliary panel tabs (Lernmodus / Messpunkte / Auswertung)
-const PANELS={learn:{tab:'tabLearn',panel:'panelLearn'},meas:{tab:'tabMeas',panel:'panelMeas'},eval:{tab:'tabEval',panel:'panelEval'}};
-function setActivePanel(name){
-  ST.activePanel = (ST.activePanel===name) ? null : name;
-  ST.learnOn = ST.activePanel==='learn';
-  Object.entries(PANELS).forEach(([key,ids])=>{
-    const on = ST.activePanel===key;
-    document.getElementById(ids.tab).classList.toggle('on',on);
-    document.getElementById(ids.panel).classList.toggle('on',on);
-  });
-  if (ST.activePanel==='eval') updateEvaluation();
-  if (ST.activePanel==='meas') refreshMeasList();
-  if (ST.activePanel==='learn') updateLearnLive(lastInspectY());
-}
-document.getElementById('tabLearn').addEventListener('click',()=>setActivePanel('learn'));
-document.getElementById('tabMeas').addEventListener('click',()=>setActivePanel('meas'));
-document.getElementById('tabEval').addEventListener('click',()=>setActivePanel('eval'));
 document.getElementById('btnMeasClear').addEventListener('click',()=>{ST.measPoints=[];refreshMeasList();requestAnimationFrame(drawGraph);});
 
 // ── Step-Animation (Einzelbild vorwärts, nur im Pause-Modus sinnvoll)
@@ -1944,8 +1938,6 @@ document.addEventListener('keydown',e=>{
       document.querySelector('#slitSeg .seg-btn[data-n="2"]').click(); break;
     case 's': case 'S':
       document.getElementById('btnStep').click(); break;
-    case 'l': case 'L':
-      setActivePanel('learn'); break;
   }
 });
 
